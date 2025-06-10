@@ -175,13 +175,12 @@
                 if (!isReload && isCacheValid()) {
                     const cachedVideos = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
                     if (cachedVideos.videos) {
-                        const response = await fetch("https://raw.githubusercontent.com/tongtrankien1605/daohuyenmy/main/videos.json?v=" + Date.now());
-                        if (response.ok) {
-                            const newData = await response.json();
-                            if (newData.version === cachedVideos.version) {
-                                videoUrls = cachedVideos.videos;
-                                shouldUseCache = true;
-                            }
+                        const cache = await caches.open('tiktok-clone-v1');
+                        const cachedUrls = await cache.keys().then(keys => keys.map(key => key.url));
+                        const validVideos = cachedVideos.videos.filter(v => cachedUrls.includes(v.url));
+                        if (validVideos.length) {
+                            videoUrls = validVideos;
+                            shouldUseCache = true;
                         }
                     }
                 }
@@ -194,6 +193,13 @@
                         videoUrls = data.videos.filter((v) => v.url && isValidVideoUrl(v.url));
                         localStorage.setItem(CACHE_KEY, JSON.stringify({ version: data.version, videos: videoUrls }));
                         localStorage.setItem(CACHE_EXPIRY_KEY, Date.now() + CACHE_DURATION);
+                        const cache = await caches.open('tiktok-clone-v1');
+                        for (let video of videoUrls) {
+                            if (!(await cache.match(video.url))) {
+                                const res = await fetch(video.url, { method: "GET", mode: "cors", credentials: "omit" });
+                                if (res.ok) await cache.put(video.url, res.clone());
+                            }
+                        }
                     } catch (e) {
                         container.innerHTML = `<p class="error-message">Lỗi: ${e.message}</p>`;
                         isReloading = false;
