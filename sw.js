@@ -42,21 +42,26 @@ self.addEventListener("fetch", (event) => {
             if (cachedResponse) {
                 console.log("From cache:", event.request.url);
                 if (event.request.headers.get('range')) {
-                    const range = event.request.headers.get('range').match(/bytes=(\d+)-(\d*)/);
-                    if (range) {
-                        const start = parseInt(range[1]);
-                        const end = range[2] ? parseInt(range[2]) : cachedResponse.headers.get('content-length') - 1;
-                        const blob = await cachedResponse.blob();
-                        const slicedBlob = blob.slice(start, end + 1);
-                        return new Response(slicedBlob, {
-                            status: 206,
-                            statusText: 'Partial Content',
-                            headers: {
-                                'Content-Range': `bytes ${start}-${end}/${blob.size}`,
-                                'Content-Length': (end - start + 1).toString(),
-                                'Accept-Ranges': 'bytes'
-                            }
-                        });
+                    try {
+                        const range = event.request.headers.get('range').match(/bytes=(\d+)-(\d*)/);
+                        if (range) {
+                            const start = parseInt(range[1]);
+                            const end = range[2] ? parseInt(range[2]) : cachedResponse.headers.get('content-length') - 1;
+                            const blob = await cachedResponse.blob();
+                            const slicedBlob = blob.slice(start, end + 1);
+                            return new Response(slicedBlob, {
+                                status: 206,
+                                statusText: 'Partial Content',
+                                headers: {
+                                    'Content-Range': `bytes ${start}-${end}/${blob.size}`,
+                                    'Content-Length': (end - start + 1).toString(),
+                                    'Accept-Ranges': 'bytes'
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn("Range request failed, serving full cache:", e);
+                        return cachedResponse;
                     }
                 }
                 return cachedResponse;

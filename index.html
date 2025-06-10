@@ -173,11 +173,11 @@
                 let shouldUseCache = false;
 
                 if (!isReload && isCacheValid()) {
-                    const cachedVideos = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                    const cachedVideos = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
                     if (cachedVideos.videos) {
-                        const cache = await caches.open('tiktok-clone-v1');
-                        const cachedUrls = await cache.keys().then(keys => keys.map(key => key.url));
-                        const validVideos = cachedVideos.videos.filter(v => cachedUrls.includes(v.url));
+                        const cache = await caches.open("tiktok-clone-v1");
+                        const cachedUrls = await cache.keys().then((keys) => keys.map((key) => key.url));
+                        const validVideos = cachedVideos.videos.filter((v) => cachedUrls.includes(v.url));
                         if (validVideos.length) {
                             videoUrls = validVideos;
                             shouldUseCache = true;
@@ -210,7 +210,7 @@
                     currentIndex = Math.floor(Math.random() * videoUrls.length);
                 }
                 const currentVideo = videoUrls[currentIndex];
-                const cache = await caches.open('tiktok-clone-v1');
+                const cache = await caches.open("tiktok-clone-v1");
                 const cachedVideo = await cache.match(currentVideo.url);
                 if (!cachedVideo) {
                     try {
@@ -222,6 +222,9 @@
                         isReloading = false;
                         return;
                     }
+                } else {
+                    // Đảm bảo không fetch lại nếu đã cache
+                    console.log(`Sử dụng cache cho: ${currentVideo.url}`);
                 }
 
                 const orderedVideos = getOrderedVideos();
@@ -232,18 +235,18 @@
                     const slide = document.createElement("div");
                     slide.className = "video-slide";
                     slide.innerHTML = `
-                        <div class="video-wrapper">
-                            <video src="${video.url}" playsinline preload="${index === 1 ? "metadata" : "none"}"></video>
-                            <div class="progress-bar"><div class="progress"></div></div>
-                            <div class="info"><p>${video.description || "Không có mô tả"}</p></div>
-                        </div>
-                        <div class="controls">
-                            <button class="control-btn" onclick="togglePlay(this)">⏯️</button>
-                            <button class="control-btn" onclick="toggleMute(this)">🔊</button>
-                            <button class="control-btn" onclick="scrollToPrev()">⬆️</button>
-                            <button class="control-btn" onclick="scrollToNext()">⬇️</button>
-                        </div>
-                    `;
+            <div class="video-wrapper">
+                <video src="${video.url}" playsinline preload="${index === 1 ? "metadata" : "none"}"></video>
+                <div class="progress-bar"><div class="progress"></div></div>
+                <div class="info"><p>${video.description || "Không có mô tả"}</p></div>
+            </div>
+            <div class="controls">
+                <button class="control-btn" onclick="togglePlay(this)">⏯️</button>
+                <button class="control-btn" onclick="toggleMute(this)">🔊</button>
+                <button class="control-btn" onclick="scrollToPrev()">⬆️</button>
+                <button class="control-btn" onclick="scrollToNext()">⬇️</button>
+            </div>
+        `;
                     container.appendChild(slide);
                 });
 
