@@ -193,13 +193,6 @@
                         videoUrls = data.videos.filter((v) => v.url && isValidVideoUrl(v.url));
                         localStorage.setItem(CACHE_KEY, JSON.stringify({ version: data.version, videos: videoUrls }));
                         localStorage.setItem(CACHE_EXPIRY_KEY, Date.now() + CACHE_DURATION);
-                        const cache = await caches.open('tiktok-clone-v1');
-                        for (let video of videoUrls) {
-                            if (!(await cache.match(video.url))) {
-                                const res = await fetch(video.url, { method: "GET", mode: "cors", credentials: "omit" });
-                                if (res.ok) await cache.put(video.url, res.clone());
-                            }
-                        }
                     } catch (e) {
                         container.innerHTML = `<p class="error-message">Lỗi: ${e.message}</p>`;
                         isReloading = false;
@@ -223,8 +216,7 @@
                     try {
                         const res = await fetch(currentVideo.url, { method: "GET", mode: "cors", credentials: "omit" });
                         if (!res.ok) throw new Error(`Video không tải được: ${currentVideo.url}`);
-                        const clonedRes = res.clone();
-                        await cache.put(currentVideo.url, clonedRes);
+                        await cache.put(currentVideo.url, res.clone());
                     } catch (e) {
                         container.innerHTML = `<p class="error-message">Lỗi tải video: ${e.message}</p>`;
                         isReloading = false;
@@ -241,7 +233,7 @@
                     slide.className = "video-slide";
                     slide.innerHTML = `
                         <div class="video-wrapper">
-                            <video src="${video.url}" playsinline preload="${index === 1 ? "auto" : "none"}"></video>
+                            <video src="${video.url}" playsinline preload="${index === 1 ? "metadata" : "none"}"></video>
                             <div class="progress-bar"><div class="progress"></div></div>
                             <div class="info"><p>${video.description || "Không có mô tả"}</p></div>
                         </div>

@@ -41,6 +41,24 @@ self.addEventListener("fetch", (event) => {
             const cachedResponse = await cache.match(cacheKey);
             if (cachedResponse) {
                 console.log("From cache:", event.request.url);
+                if (event.request.headers.get('range')) {
+                    const range = event.request.headers.get('range').match(/bytes=(\d+)-(\d*)/);
+                    if (range) {
+                        const start = parseInt(range[1]);
+                        const end = range[2] ? parseInt(range[2]) : cachedResponse.headers.get('content-length') - 1;
+                        const blob = await cachedResponse.blob();
+                        const slicedBlob = blob.slice(start, end + 1);
+                        return new Response(slicedBlob, {
+                            status: 206,
+                            statusText: 'Partial Content',
+                            headers: {
+                                'Content-Range': `bytes ${start}-${end}/${blob.size}`,
+                                'Content-Length': (end - start + 1).toString(),
+                                'Accept-Ranges': 'bytes'
+                            }
+                        });
+                    }
+                }
                 return cachedResponse;
             }
 
@@ -53,7 +71,6 @@ self.addEventListener("fetch", (event) => {
                 return networkResponse;
             }).catch(async (err) => {
                 console.error("Fetch failed:", err);
-                // Xóa cache video không còn trong videos.json
                 const videoResponse = await fetch("/daohuyenmy/videos.json");
                 if (videoResponse.ok) {
                     const videos = await videoResponse.json();
